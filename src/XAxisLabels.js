@@ -1,4 +1,15 @@
-import _ from "lodash";
+import find from "lodash/find";
+import defaults from "lodash/defaults";
+import isUndefined from "lodash/isUndefined";
+import last from "lodash/last";
+import minBy from "lodash/minBy";
+import max from "lodash/max";
+import capitalize from "lodash/capitalize";
+import identity from "lodash/identity";
+import isArray from "lodash/isArray";
+import isFunction from "lodash/isFunction";
+import partial, { placeholder } from "lodash/partial";
+import get from "lodash/get";
 import PropTypes from "prop-types";
 import React from "react";
 import MeasuredValueLabel from "./MeasuredValueLabel";
@@ -22,12 +33,12 @@ function resolveXLabelsForValues(scale, values, formats, style, force = true) {
   let labels;
   let attempts = [];
 
-  const goodFormat = _.find(formats, format => {
+  const goodFormat = find(formats, format => {
     const testLabels = values.map((value, i) => {
       return MeasuredValueLabel.getLabel({
         value,
         format,
-        style: _.defaults(
+        style: defaults(
           getValue(style.labelStyle, { value }, i),
           style.defaultStyle
         )
@@ -60,7 +71,7 @@ function resolveXLabelsForValues(scale, values, formats, style, force = true) {
     return true;
   });
 
-  if (!_.isUndefined(goodFormat)) {
+  if (!isUndefined(goodFormat)) {
     // found labels which work, return them
     return {
       labels,
@@ -81,9 +92,9 @@ function resolveXLabelsForValues(scale, values, formats, style, force = true) {
     );
     return distinctAttempts.length === 0
       ? // super bad, we don't have any label sets with distinct labels. return the last attempt.
-        _.last(attempts)
+        last(attempts)
       : // return the attempt with the fewest collisions between distinct labels
-        _.minBy(distinctAttempts, "collisionCount");
+        minBy(distinctAttempts, "collisionCount");
   }
 }
 
@@ -214,12 +225,12 @@ class XAxisLabels extends React.Component {
 
   static getTickDomain(props) {
     if (!props.xScale) return;
-    props = _.defaults({}, props, XAxisLabels.defaultProps);
+    props = defaults({}, props, XAxisLabels.defaultProps);
     return { xTickDomain: getTickDomain(props.xScale, props) };
   }
 
   static getMargin(props) {
-    props = _.defaults({}, props, XAxisLabels.defaultProps);
+    props = defaults({}, props, XAxisLabels.defaultProps);
     const { xScale, position, placement, distance } = props;
     const labels = props.labels || XAxisLabels.getLabels(props);
     const zeroMargin = {
@@ -235,7 +246,7 @@ class XAxisLabels extends React.Component {
     )
       return zeroMargin;
 
-    const marginY = _.max(
+    const marginY = max(
       labels.map(label => Math.ceil(distance + label.height))
     );
     const [marginLeft, marginRight] = getLabelsXOverhang(
@@ -244,8 +255,8 @@ class XAxisLabels extends React.Component {
       "middle"
     );
 
-    return _.defaults(
-      { [`margin${_.capitalize(position)}`]: marginY, marginLeft, marginRight },
+    return defaults(
+      { [`margin${capitalize(position)}`]: marginY, marginLeft, marginRight },
       zeroMargin
     );
   }
@@ -262,14 +273,14 @@ class XAxisLabels extends React.Component {
     ];
 
     return scaleType === "ordinal"
-      ? [_.identity]
+      ? [identity]
       : scaleType === "time"
         ? timeFormatStrs
         : numberFormatStrs;
   }
 
   static getLabels(props) {
-    const { tickCount, labelStyle, xScale } = _.defaults(
+    const { tickCount, labelStyle, xScale } = defaults(
       props,
       {},
       XAxisLabels.defaultProps
@@ -283,7 +294,7 @@ class XAxisLabels extends React.Component {
     const scaleType = inferScaleType(xScale);
     const propsFormats = props.format ? [props.format] : props.formats;
     const formatStrs =
-      _.isArray(propsFormats) && propsFormats.length
+      isArray(propsFormats) && propsFormats.length
         ? propsFormats
         : XAxisLabels.getDefaultFormats(scaleType);
     const formats = makeLabelFormatters(formatStrs, scaleType);
@@ -333,13 +344,13 @@ class XAxisLabels extends React.Component {
             "onMouseClickLabel"
           ].map(eventName => {
             // partially apply this label's data point as 2nd callback argument
-            const callback = _.get(this.props, eventName);
-            return _.isFunction(callback)
-              ? _.partial(callback, _, label.value)
+            const callback = get(this.props, eventName);
+            return isFunction(callback)
+              ? partial(callback, placeholder, label.value)
               : null;
           });
 
-          const style = _.defaults(
+          const style = defaults(
             { textAnchor: "middle" },
             getValue(labelStyle, { x, y, ...label }, i),
             XAxisLabels.defaultProps.labelStyle

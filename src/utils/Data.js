@@ -1,6 +1,40 @@
-import _ from "lodash";
+import isFunction from "lodash/isFunction";
+import isNull from "lodash/isNull";
+import isUndefined from "lodash/isUndefined";
+import identity from "lodash/identity";
+import property from "lodash/property";
+import isArray from "lodash/isArray";
+import every from "lodash/every";
+import isNumber from "lodash/isNumber";
+import isDate from "lodash/isDate";
+import uniq from "lodash/uniq";
+import flatten from "lodash/flatten";
+import compact from "lodash/compact";
+import fromPairs from "lodash/fromPairs";
+import get from "lodash/get";
+import maxBy from "lodash/maxBy";
+import keyBy from "lodash/keyBy";
+import toString from "lodash/toString";
+import has from "lodash/has";
+import forEach from "lodash/forEach";
+import uniqBy from "lodash/uniqBy";
+import sortBy from "lodash/sortBy";
+import value from "lodash/value";
+import chain from "lodash/chain";
+import map from "lodash/map";
+import _ from "lodash/wrapperLodash";
+import mixin from "lodash/mixin";
 import { extent } from "d3";
 import React from "react";
+
+// to allow chaining properly
+mixin(_, {
+  map,
+  flatten,
+  uniqBy,
+  sortBy,
+  value
+});
 
 /**
  * `makeAccessor` creates an accessor or "getter" function given a variety of options
@@ -8,7 +42,7 @@ import React from "react";
  *
  * If given a function, it is passed through.
  * If given null or undefined, the getter is the identity function - ie. returns whatever it's passed
- * If given an array index or deep object key string, the value will be retrieved using _.property
+ * If given an array index or deep object key string, the value will be retrieved using property
  *
  * @example
  * makeAccessor(null)(4); // 4
@@ -20,11 +54,11 @@ import React from "react";
  * @returns {function} accessor - Accessor function
  */
 export function makeAccessor(key) {
-  return _.isFunction(key)
+  return isFunction(key)
     ? key
-    : _.isNull(key) || _.isUndefined(key)
-      ? _.identity
-      : _.property(key);
+    : isNull(key) || isUndefined(key)
+      ? identity
+      : property(key);
 }
 
 /**
@@ -32,7 +66,7 @@ export function makeAccessor(key) {
  * if passed a function, just returns it
  */
 export function makeAccessor2(valueOrAccessor) {
-  if (_.isFunction(valueOrAccessor)) return valueOrAccessor;
+  if (isFunction(valueOrAccessor)) return valueOrAccessor;
   return () => valueOrAccessor;
 }
 
@@ -42,7 +76,7 @@ export function makeAccessor2(valueOrAccessor) {
  * If a function, returns the result of calling function with remaining arguments
  */
 export function getValue(accessor, ...args) {
-  return _.isFunction(accessor) ? accessor(...args) : accessor;
+  return isFunction(accessor) ? accessor(...args) : accessor;
 }
 
 /**
@@ -55,9 +89,9 @@ export function getValue(accessor, ...args) {
  * @returns {Array.<Array>} datasets - An array of arrays of data objects
  */
 export function datasetsFromPropsOrDescendants(props) {
-  if (_.isArray(props.datasets)) {
+  if (isArray(props.datasets)) {
     return props.datasets;
-  } else if (_.isArray(props.data)) {
+  } else if (isArray(props.data)) {
     return [props.data];
   } else if (React.Children.count(props.children)) {
     let datasets = [];
@@ -70,72 +104,67 @@ export function datasetsFromPropsOrDescendants(props) {
   return [];
 }
 
-export function inferDataType(data, accessor = _.identity) {
-  if (!_.isArray(data)) throw new Error("inferDataType expects a data array");
-  else if (_.every(data, (d, i) => _.isUndefined(accessor(d, i))))
+export function inferDataType(data, accessor = identity) {
+  if (!isArray(data)) throw new Error("inferDataType expects a data array");
+  else if (every(data, (d, i) => isUndefined(accessor(d, i))))
     return "categorical";
   // should this be allowed?
   else if (
-    _.every(
+    every(
       data,
-      (d, i) => _.isNumber(accessor(d, i)) || _.isUndefined(accessor(d, i))
+      (d, i) => isNumber(accessor(d, i)) || isUndefined(accessor(d, i))
     )
   )
     return "number";
   else if (
-    _.every(
-      data,
-      (d, i) => _.isDate(accessor(d, i)) || _.isUndefined(accessor(d, i))
-    )
+    every(data, (d, i) => isDate(accessor(d, i)) || isUndefined(accessor(d, i)))
   )
     return "time";
   else return "categorical";
 }
 
-export function inferDatasetsType(datasets, accessor = _.identity) {
-  if (!_.isArray(datasets))
+export function inferDatasetsType(datasets, accessor = identity) {
+  if (!isArray(datasets))
     throw new Error("inferDatasetsType expects a datasets array");
 
   const types = datasets.map(data => inferDataType(data, accessor));
-  const uniqTypes = _.uniq(types);
+  const uniqTypes = uniq(types);
   return uniqTypes.length === 1 ? uniqTypes[0] : "categorical";
 }
 
 export function isValidDomain(domain, type = "categorical") {
   return (
-    _.isArray(domain) &&
+    isArray(domain) &&
     !!domain.length &&
     // categorical domain can be any array of anything
     (type === "categorical" ||
       // number/time domains should look like [min, max]
-      (type === "number" &&
-        domain.length === 2 &&
-        _.every(domain, _.isNumber)) ||
-      (type === "time" && domain.length === 2 && _.every(domain, _.isDate)))
+      (type === "number" && domain.length === 2 && every(domain, isNumber)) ||
+      (type === "time" && domain.length === 2 && every(domain, isDate)))
   );
 }
 
 export function combineDomains(domains, dataType) {
-  if (!_.isArray(domains)) return undefined;
+  if (!isArray(domains)) return undefined;
   return dataType === "categorical"
-    ? _.uniq(_.flatten(_.compact(domains)))
-    : extent(_.flatten(domains));
+    ? uniq(flatten(compact(domains)))
+    : extent(flatten(domains));
 }
 
 export function combineBorderObjects(borderObjects) {
-  return _.fromPairs(
+  return fromPairs(
     ["top", "bottom", "left", "right"].map(k => {
       // combine border objects by taking the max value of each spacing direction
-      return [k, _.get(_.maxBy(borderObjects, k), k)];
+      return [k, get(maxBy(borderObjects, k), k)];
     })
   );
 }
 
-export function domainFromData(data, accessor = _.identity, type = undefined) {
+export function domainFromData(data, accessor = identity, type = undefined) {
   if (!type) type = inferDataType(data, accessor);
   return type === "number" || type === "time"
     ? extent(data.map(accessor))
-    : _.uniq(data.map(accessor));
+    : uniq(data.map(accessor));
 }
 
 export function getDataDomainByAxis(props) {
@@ -149,7 +178,7 @@ export function getDataDomainByAxis(props) {
 
 export function domainFromDatasets(
   datasets,
-  accessor = _.identity,
+  accessor = identity,
   type = undefined
 ) {
   // returns the default domain of a collection of datasets with an accessor function
@@ -175,14 +204,14 @@ export function domainFromRangeData(
     case "number":
     case "time":
       return extent(
-        _.flatten([
+        flatten([
           extent(data, (d, i) => +rangeStartAccessor(d, i)),
           extent(data, (d, i) => +rangeEndAccessor(d, i))
         ])
       );
     case "categorical":
-      return _.uniq(
-        _.flatten([data.map(rangeStartAccessor), data.map(rangeEndAccessor)])
+      return uniq(
+        flatten([data.map(rangeStartAccessor), data.map(rangeEndAccessor)])
       );
   }
   return [];
@@ -205,16 +234,16 @@ export function combineDatasets(datasetsInfo = [], combineKey = "x") {
   // index each dataset by its combineKey values so we can quickly lookup if it has data for a given value
   const datasetLookups = datasetsInfo.map(datasetInfo => {
     const { data } = datasetInfo;
-    return _.keyBy(data, datasetInfo.combineKey || combineKey);
+    return keyBy(data, datasetInfo.combineKey || combineKey);
   });
 
   // create a unique sorted array containing all of the data values for combineKey in all datasets
-  const allCombineValues = _(datasetsInfo)
+  const allCombineValues = chain(datasetsInfo)
     .map(datasetInfo =>
       datasetInfo.data.map(makeAccessor(datasetInfo.combineKey || combineKey))
     )
     .flatten()
-    .uniqBy(_.toString) // uniq by string, otherwise dates etc. are not unique
+    .uniqBy(toString) // uniq by string, otherwise dates etc. are not unique
     .sortBy()
     .value();
 
@@ -227,10 +256,10 @@ export function combineDatasets(datasetsInfo = [], combineKey = "x") {
       if (!datasetInfo.dataKeys || !Object.keys(datasetInfo.dataKeys).length)
         return;
       const datasetLookup = datasetLookups[datasetIndex];
-      if (!_.has(datasetLookup, combineValue)) return;
+      if (!has(datasetLookup, combineValue)) return;
 
       const datum = datasetLookup[combineValue];
-      _.forEach(datasetInfo.dataKeys, (newDataKey, originalDataKey) => {
+      forEach(datasetInfo.dataKeys, (newDataKey, originalDataKey) => {
         combinedDatum[newDataKey] = datum[originalDataKey];
       });
     });

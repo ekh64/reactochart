@@ -1,4 +1,10 @@
-import _ from "lodash";
+import first from "lodash/first";
+import last from "lodash/last";
+import get from "lodash/get";
+import isFunction from "lodash/isFunction";
+import partial, { placeholder } from "lodash/partial";
+import clamp from "lodash/clamp";
+import chain from "lodash/chain";
 import PropTypes from "prop-types";
 import React from "react";
 import Bar from "./Bar";
@@ -167,23 +173,23 @@ export default class RangeBarChart extends React.Component {
 
     // todo refactor/add better comments to clarify
     //find the edges of the tick domain, and map them through the scale function
-    const [domainHead, domainTail] = _([
-      _.first(barsDomain),
-      _.last(barsDomain)
+    const [domainHead, domainTail] = chain([
+      first(barsDomain),
+      last(barsDomain)
     ])
       .map(barsScale)
       .sortBy(); //sort the pixel values return by the domain extents
     //find the edges of the data domain, and map them through the scale function
-    const [dataDomainHead, dataDomainTail] = _([
-      _.first(barsDataDomain),
-      _.last(barsDataDomain)
+    const [dataDomainHead, dataDomainTail] = chain([
+      first(barsDataDomain),
+      last(barsDataDomain)
     ])
       .map(barsScale)
       .sortBy(); //sort the pixel values return by the domain extents
     //find the necessary spacing (based on bar width) to push the bars completely inside the tick domain
     const [spacingTail, spacingHead] = [
-      _.clamp(P - (domainTail - dataDomainTail), 0, P),
-      _.clamp(P - (dataDomainHead - domainHead), 0, P)
+      clamp(P - (domainTail - dataDomainTail), 0, P),
+      clamp(P - (dataDomainHead - domainHead), 0, P)
     ];
     if (horizontal) {
       return {
@@ -236,8 +242,10 @@ export default class RangeBarChart extends React.Component {
             "onMouseLeaveBar"
           ].map(eventName => {
             // partially apply this bar's data point as 2nd callback argument
-            const callback = _.get(this.props, eventName);
-            return _.isFunction(callback) ? _.partial(callback, _, d) : null;
+            const callback = get(this.props, eventName);
+            return isFunction(callback)
+              ? partial(callback, placeholder, d)
+              : null;
           });
 
           const barProps = {

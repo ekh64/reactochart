@@ -1,7 +1,9 @@
 import * as d3 from "d3";
-import _ from "lodash";
-import PropTypes from "prop-types";
 import React from "react";
+import PropTypes from "prop-types";
+import isArray from "lodash/isArray";
+import isFinite from "lodash/isFinite";
+import isFunction from "lodash/isFunction";
 
 // todo: make sure this correctly handles new props getting passed in, doesn't double bind events
 
@@ -141,16 +143,16 @@ export default class ZoomContainer extends React.Component {
       wheelDelta
     } = props;
 
-    if (_.isArray(extent)) this.zoom.extent(extent);
-    if (_.isArray(scaleExtent)) this.zoom.scaleExtent(scaleExtent);
-    if (_.isArray(translateExtent)) this.zoom.translateExtent(translateExtent);
-    if (_.isFinite(clickDistance)) this.zoom.clickDistance(clickDistance);
-    if (_.isFinite(duration)) this.zoom.duration(duration);
-    if (_.isFunction(interpolate)) this.zoom.interpolate(interpolate);
-    if (_.isFunction(constrain)) this.zoom.constrain(constrain);
-    if (_.isFunction(filter)) this.zoom.filter(filter);
-    if (_.isFunction(touchable)) this.zoom.touchable(touchable);
-    if (_.isFunction(wheelDelta)) this.zoom.wheelDelta(wheelDelta);
+    if (isArray(extent)) this.zoom.extent(extent);
+    if (isArray(scaleExtent)) this.zoom.scaleExtent(scaleExtent);
+    if (isArray(translateExtent)) this.zoom.translateExtent(translateExtent);
+    if (isFinite(clickDistance)) this.zoom.clickDistance(clickDistance);
+    if (isFinite(duration)) this.zoom.duration(duration);
+    if (isFunction(interpolate)) this.zoom.interpolate(interpolate);
+    if (isFunction(constrain)) this.zoom.constrain(constrain);
+    if (isFunction(filter)) this.zoom.filter(filter);
+    if (isFunction(touchable)) this.zoom.touchable(touchable);
+    if (isFunction(wheelDelta)) this.zoom.wheelDelta(wheelDelta);
   }
 
   componentDidMount() {

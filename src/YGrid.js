@@ -1,7 +1,6 @@
 import React from "react";
-import _ from "lodash";
 import PropTypes from "prop-types";
-
+import defaults from "lodash/defaults";
 import YLine from "./YLine";
 import { getScaleTicks, getTickDomain } from "./utils/Scale";
 
@@ -27,7 +26,7 @@ export default class YGrid extends React.Component {
 
   static getTickDomain(props) {
     if (!props.yScale) return;
-    props = _.defaults({}, props, YGrid.defaultProps);
+    props = defaults({}, props, YGrid.defaultProps);
     return { yTickDomain: getTickDomain(props.yScale, props) };
   }
 

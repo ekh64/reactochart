@@ -1,4 +1,7 @@
-import _ from "lodash";
+import omit from "lodash/omit";
+import every from "lodash/every";
+import get from "lodash/get";
+import isEqual from "lodash/isEqual";
 import shallowEqual from "./shallowEqual";
 import { scaleEqual } from "./Scale";
 
@@ -8,7 +11,7 @@ import { scaleEqual } from "./Scale";
 // however some props are almost always passed as object/array literals (so they never ===)
 // or require special equality checks (eg. d3 scales)
 
-// default list of props to check for *deep equality* using _.isEqual
+// default list of props to check for *deep equality* using isEqual
 // can be overridden by components by passing `propKeysToDeepCheck` argument
 // todo: decide whether data really belongs on this list? deep-checking data can be slow, but re-rendering is even slower
 export const defaultPropKeysToDeepCheck = [
@@ -32,23 +35,23 @@ export default function xyPropsEqual(
 
   const propKeysToSkipShallowCheck = propKeysToDeepCheck.concat("scale");
 
-  const isEqual =
+  const arePropsEqual =
     // most keys just get shallow-equality checked
     shallowEqual(
-      _.omit(propsA, propKeysToSkipShallowCheck),
-      _.omit(propsB, propKeysToSkipShallowCheck)
+      omit(propsA, propKeysToSkipShallowCheck),
+      omit(propsB, propKeysToSkipShallowCheck)
     ) &&
-    // propKeysToDeepCheck get deep-equality checked using _.isEqual
-    _.every(propKeysToDeepCheck, key => _.isEqual(propsA[key], propsB[key])) &&
+    // propKeysToDeepCheck get deep-equality checked using isEqual
+    every(propKeysToDeepCheck, key => isEqual(propsA[key], propsB[key])) &&
     // d3 scales are special, get deep-checked using custom `scaleEqual` utility
-    _.every(["x", "y"], key => {
+    every(["x", "y"], key => {
       return scaleEqual(
-        _.get(propsA, `scale[${key}]`),
-        _.get(propsA, `scale[${key}]`)
+        get(propsA, `scale[${key}]`),
+        get(propsA, `scale[${key}]`)
       );
     });
 
-  return isEqual;
+  return arePropsEqual;
 }
 
 export function xyPropsEqualDebug(
@@ -64,18 +67,18 @@ export function xyPropsEqualDebug(
   // const start = performance.now();
   const propKeysToSkipShallowCheck = propKeysToDeepCheck.concat("scale");
 
-  const isEqual =
+  const arePropsEqual =
     // most keys just get shallow-equality checked
     shallowEqual(
-      _.omit(propsA, propKeysToSkipShallowCheck),
-      _.omit(propsB, propKeysToSkipShallowCheck)
+      omit(propsA, propKeysToSkipShallowCheck),
+      omit(propsB, propKeysToSkipShallowCheck)
     ) &&
-    _.every(propKeysToDeepCheck, key => {
-      const isDeepEqual = _.isEqual(propsA[key], propsB[key]);
+    every(propKeysToDeepCheck, key => {
+      const isDeepEqual = isEqual(propsA[key], propsB[key]);
       if (!isDeepEqual) console.log(`xyProps: ${key} not equal`);
       return isDeepEqual;
     }) &&
-    _.every(["x", "y"], key => {
+    every(["x", "y"], key => {
       const isScaleEqual = scaleEqual(propsA.scale[key], propsB.scale[key]);
       if (!isScaleEqual) console.log(`xyProps: scale.${key} not equal`);
       return isScaleEqual;
@@ -83,5 +86,5 @@ export function xyPropsEqualDebug(
 
   // console.log('xyProps isEqual', isEqual);
   // console.log('took', performance.now() - start);
-  return isEqual;
+  return arePropsEqual;
 }
